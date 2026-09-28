@@ -38,51 +38,57 @@ fn main() {
     match command.as_str() {
         "info" => {
             println!("Running info on {file}...");
-            let contents = fs::read_to_string(file);
 
-            match contents {
-                Ok(value) => {
-                    println!("Successfully read {file}");
-
-                    let mut records = Vec::new();
-
-                    for line in value.lines().skip(1) {
-                        match parse_record(line) {
-                            Ok(rec) => {
-                                records.push(rec);
-                            }
-                            Err(err) => {
-                                eprintln!("{err}")
-                            }
-                        }
-                    }
-
-                    let mut signals = HashSet::new();
-
-                    for rec in &records {
-                        signals.insert(rec.signal.as_str());
-                    }
-
-                    println!("Total records: {}", value.lines().skip(1).count());
-                    println!("Unique signals: {}", signals.len());
-                    println!("Valid records: {}", records.len());
-
-                    match (records.first(), records.last()) {
-                        (Some(first), Some(last)) => {
-                            println!("Duration: {}s", last.timestamp - first.timestamp);
-                        }
-                        _ => {
-                            eprintln!("error: missing timestamps");
-                        }
-                    }
+            let records = match read_records(file) {
+                Ok(records) => records,
+                Err(err) => {
+                    eprintln!("{err}");
+                    return;
                 }
-                Err(error) => {
-                    eprintln!("{error}");
+            };
+
+            let mut signals = HashSet::new();
+
+            for rec in &records {
+                signals.insert(rec.signal.as_str());
+            }
+
+            println!("Unique signals: {}", signals.len());
+            println!("Valid records: {}", records.len());
+
+            match (records.first(), records.last()) {
+                (Some(first), Some(last)) => {
+                    println!("Duration: {}s", last.timestamp - first.timestamp);
+                }
+                _ => {
+                    eprintln!("error: missing timestamps");
                 }
             }
         }
         "signals" => {
             println!("Listing signals in {file}...");
+
+            let records = match read_records(file) {
+                Ok(records) => records,
+                Err(err) => {
+                    eprintln!("{err}");
+                    return;
+                }
+            };
+
+            let mut signals = HashSet::new();
+
+            for rec in &records {
+                signals.insert(rec.signal.as_str());
+            }
+
+            let mut signals = signals.into_iter().collect::<Vec<&str>>();
+            signals.sort();
+
+            println!("Unique signals: ");
+            for signal in signals {
+                println!("{signal}")
+            }
         }
         _ => {
             eprintln!("error: command '{command}' not recognized");
@@ -115,4 +121,18 @@ fn parse_record(line: &str) -> Result<Record, String> {
         signal,
         value,
     })
+}
+
+fn read_records(file: &str) -> Result<Vec<Record>, String> {
+    let contents = fs::read_to_string(file).map_err(|err| err.to_string())?;
+
+    println!("Successfully read {file}");
+
+    let mut records = Vec::new();
+
+    for line in contents.lines().skip(1) {
+        records.push(parse_record(line)?);
+    }
+
+    Ok(records)
 }
