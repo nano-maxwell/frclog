@@ -5,6 +5,7 @@ use std::fs;
 struct Record {
     timestamp: f64,
     signal: String,
+    #[allow(dead_code)]
     value: f64,
 }
 
