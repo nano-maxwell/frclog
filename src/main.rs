@@ -1,6 +1,7 @@
 mod reader;
 mod record;
 
+use crate::record::Record;
 use std::collections::HashSet;
 use std::env;
 
@@ -43,11 +44,7 @@ fn main() {
                 }
             };
 
-            let mut signals = HashSet::new();
-
-            for rec in &records {
-                signals.insert(rec.signal.as_str());
-            }
+            let signals = unique_signals(&records);
 
             println!("Unique signals: {}", signals.len());
             println!("Valid records: {}", records.len());
@@ -72,16 +69,12 @@ fn main() {
                 }
             };
 
-            let mut signals = HashSet::new();
-
-            for rec in &records {
-                signals.insert(rec.signal.as_str());
-            }
+            let signals = unique_signals(&records);
 
             let mut signals = signals.into_iter().collect::<Vec<&str>>();
             signals.sort();
 
-            println!("Unique signals: ");
+            println!("Unique signals:");
             for signal in signals {
                 println!("{signal}")
             }
@@ -90,4 +83,14 @@ fn main() {
             eprintln!("error: command '{command}' not recognized");
         }
     }
+}
+
+fn unique_signals(records: &[Record]) -> HashSet<&str> {
+    let mut signals = HashSet::new();
+
+    for record in records {
+        signals.insert(record.signal.as_str());
+    }
+
+    signals
 }
