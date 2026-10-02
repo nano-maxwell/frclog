@@ -99,7 +99,8 @@ fn main() {
             let signals = unique_signals(&records);
 
             if !signals.contains(signal.as_str()) {
-                eprintln!("error: signal '{signal}' not found in {file}")
+                eprintln!("error: signal '{signal}' not found in {file}");
+                return;
             }
 
             println!("Calculating stats for '{signal}' in {file}...");
