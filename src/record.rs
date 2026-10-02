@@ -19,6 +19,10 @@ pub(crate) fn parse_record(line: &str) -> Result<Record, String> {
         .ok_or(String::from("error: missing signal"))?
         .to_string();
 
+    if signal.is_empty() {
+        return Err(String::from("error: empty signal name"));
+    }
+
     let value = fields
         .next()
         .ok_or(String::from("error: missing value"))?
