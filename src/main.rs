@@ -103,6 +103,32 @@ fn main() {
             }
 
             println!("Calculating stats for '{signal}' in {file}...");
+
+            let filtered = filter_records(&records, signal);
+
+            let mut count = 0;
+            let mut sum = 0.0;
+            let mut min = f64::MAX;
+            let mut max = f64::MIN;
+
+            for record in &filtered {
+                sum += record.value;
+                count += 1;
+                min = f64::min(min, record.value);
+                max = f64::max(max, record.value);
+            }
+
+            let count = count;
+            let sum = sum;
+            let min = min;
+            let max = max;
+            let mean = sum / count as f64;
+
+            println!("Stats for '{signal}':");
+            println!("Samples: {count}");
+            println!("Minimum: {min}");
+            println!("Maximum: {max}");
+            println!("Mean: {mean}");
         }
         _ => {
             eprintln!("error: command '{command}' not recognized");
@@ -120,7 +146,6 @@ fn unique_signals(records: &[Record]) -> HashSet<&str> {
     signals
 }
 
-#[allow(dead_code)]
 fn filter_records<'a>(records: &'a [Record], signal: &str) -> Vec<&'a Record> {
     let mut filtered = Vec::new();
 
