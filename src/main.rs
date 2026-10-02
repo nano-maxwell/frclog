@@ -79,6 +79,31 @@ fn main() {
                 println!("{signal}")
             }
         }
+        "stats" => {
+            let signal = match args.get(3) {
+                Some(value) => value,
+                None => {
+                    eprintln!("error: no signal provided");
+                    return;
+                }
+            };
+
+            let records = match reader::read_records(file) {
+                Ok(records) => records,
+                Err(err) => {
+                    eprintln!("{err}");
+                    return;
+                }
+            };
+
+            let signals = unique_signals(&records);
+
+            if !signals.contains(signal.as_str()) {
+                eprintln!("error: signal '{signal}' not found in {file}")
+            }
+
+            println!("Calculating stats for '{signal}' in {file}...");
+        }
         _ => {
             eprintln!("error: command '{command}' not recognized");
         }
@@ -93,4 +118,17 @@ fn unique_signals(records: &[Record]) -> HashSet<&str> {
     }
 
     signals
+}
+
+#[allow(dead_code)]
+fn filter_records<'a>(records: &'a [Record], signal: &str) -> Vec<&'a Record> {
+    let mut filtered = Vec::new();
+
+    for record in records {
+        if record.signal.as_str() == signal {
+            filtered.push(record);
+        }
+    }
+
+    filtered
 }
