@@ -60,6 +60,41 @@ fn main() {
                 }
             }
         }
+        "signal" => {
+            let signal = match args.get(3) {
+                Some(value) => value,
+                None => {
+                    eprintln!("error: no signal provided");
+                    return;
+                }
+            };
+
+            let records = match reader::read_records(file) {
+                Ok(records) => records,
+                Err(err) => {
+                    eprintln!("{err}");
+                    return;
+                }
+            };
+
+            println!("Finding occurrences of '{signal}' in {file}...");
+
+            let filtered = filter_records(&records, signal);
+
+            if filtered.is_empty() {
+                eprintln!("error: signal '{signal}' not found in {file}");
+                return;
+            }
+
+            println!("Signal: {signal}");
+            println!("Samples: {}", filtered.len());
+            println!();
+            println!("{:<11} Value", "Timestamp");
+
+            for record in filtered {
+                println!("{:<11.3} {:.3}", record.timestamp, record.value);
+            }
+        }
         "signals" => {
             println!("Listing signals in {file}...");
 
