@@ -47,7 +47,7 @@ mod tests {
 
     #[test]
     fn calculates_stats_for_multiple_records() {
-        let records = vec![
+        let records = [
             Record {
                 value: 1.0,
                 signal: "elevator_current".to_string(),
@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     fn calculates_stats_for_negative_values() {
-        let records = vec![
+        let records = [
             Record {
                 timestamp: 1.0,
                 signal: "temperature".to_string(),
@@ -115,7 +115,7 @@ mod tests {
 
     #[test]
     fn calculates_stats_when_values_are_identical() {
-        let records = vec![
+        let records = [
             Record {
                 timestamp: 1.0,
                 signal: "current".to_string(),
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn calculates_fractional_mean() {
-        let records = vec![
+        let records = [
             Record {
                 timestamp: 1.0,
                 signal: "voltage".to_string(),
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn calculates_non_integer_standard_deviation() {
-        let records = vec![
+        let records = [
             Record {
                 timestamp: 1.0,
                 signal: "test".to_string(),
