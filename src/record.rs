@@ -36,7 +36,7 @@ pub(crate) fn parse_record(line: &str) -> Result<Record, String> {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
 
     #[test]
@@ -66,19 +66,19 @@ mod test {
     }
 
     #[test]
-    fn rejects_missing_timestamp() {
+    fn rejects_empty_timestamp() {
         let result = parse_record(",voltage,5.0");
         assert!(result.is_err());
     }
 
     #[test]
-    fn rejects_missing_signal() {
+    fn rejects_empty_signal() {
         let result = parse_record("1.0,,5.0");
         assert!(result.is_err());
     }
 
     #[test]
-    fn rejects_missing_value() {
+    fn rejects_empty_value() {
         let result = parse_record("1.0,voltage,");
         assert!(result.is_err());
     }
