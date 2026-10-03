@@ -1,7 +1,9 @@
 mod reader;
 mod record;
+mod stats;
 
 use crate::record::Record;
+use crate::stats::calculate_signal_stats;
 use std::collections::HashSet;
 use std::env;
 
@@ -107,29 +109,14 @@ fn main() {
 
             let filtered = filter_records(&records, signal);
 
-            let mut count = 0;
-            let mut sum = 0.0;
-            let mut min = f64::MAX;
-            let mut max = f64::MIN;
-
-            for record in &filtered {
-                sum += record.value;
-                count += 1;
-                min = f64::min(min, record.value);
-                max = f64::max(max, record.value);
-            }
-
-            let count = count;
-            let sum = sum;
-            let min = min;
-            let max = max;
-            let mean = sum / count as f64;
+            let stats = calculate_signal_stats(&filtered);
 
             println!("Stats for '{signal}':");
-            println!("Samples: {count}");
-            println!("Minimum: {min}");
-            println!("Maximum: {max}");
-            println!("Mean: {mean}");
+            println!("Samples: {}", stats.count);
+            println!("Minimum: {:.3}", stats.min);
+            println!("Maximum: {:.3}", stats.max);
+            println!("Mean: {:.3}", stats.mean);
+            println!("Standard Deviation: {:.3}", stats.std_dev);
         }
         _ => {
             eprintln!("error: command '{command}' not recognized");
