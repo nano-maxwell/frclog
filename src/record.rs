@@ -6,11 +6,8 @@ pub(crate) struct Record {
 
 pub(crate) enum Value {
     Float(f64),
-    #[allow(dead_code)]
     Integer(i64),
-    #[allow(dead_code)]
     Boolean(bool),
-    #[allow(dead_code)]
     Text(String),
 }
 

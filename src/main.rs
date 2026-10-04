@@ -3,7 +3,7 @@ mod record;
 mod stats;
 
 use crate::record::{Record, Value};
-use crate::stats::calculate_signal_stats;
+use crate::stats::calculate_numeric_stats;
 use std::collections::HashSet;
 use std::env;
 
@@ -86,17 +86,32 @@ fn main() {
                 return;
             }
 
+            let signal_type = match &filtered[0].value {
+                Value::Float(_) | Value::Integer(_) => "Numeric",
+                Value::Boolean(_) => "Boolean",
+                Value::Text(_) => "Text",
+            };
+
             println!("Signal: {signal}");
+            println!("Type: {signal_type}");
             println!("Samples: {}", filtered.len());
             println!();
             println!("{:<11} Value", "Timestamp");
 
             for record in filtered {
                 match &record.value {
+                    Value::Boolean(value) => {
+                        println!("{:<11.3} {}", record.timestamp, value);
+                    }
+                    Value::Integer(value) => {
+                        println!("{:<11.3} {}", record.timestamp, value);
+                    }
                     Value::Float(value) => {
                         println!("{:<11.3} {:.3}", record.timestamp, value);
                     }
-                    _ => todo!(),
+                    Value::Text(value) => {
+                        println!("{:<11.3} {}", record.timestamp, value);
+                    }
                 }
             }
         }
@@ -149,7 +164,13 @@ fn main() {
 
             let filtered = filter_records(&records, signal);
 
-            let stats = calculate_signal_stats(&filtered);
+            let stats = match calculate_numeric_stats(&filtered) {
+                Ok(stats) => stats,
+                Err(err) => {
+                    eprintln!("{err}");
+                    return;
+                }
+            };
 
             println!("Stats for '{signal}':");
             println!("Samples: {}", stats.count);
