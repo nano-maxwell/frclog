@@ -1,7 +1,17 @@
 pub(crate) struct Record {
     pub(crate) timestamp: f64,
     pub(crate) signal: String,
-    pub(crate) value: f64,
+    pub(crate) value: Value,
+}
+
+pub(crate) enum Value {
+    Float(f64),
+    #[allow(dead_code)]
+    Integer(i64),
+    #[allow(dead_code)]
+    Boolean(bool),
+    #[allow(dead_code)]
+    Text(String),
 }
 
 pub(crate) fn parse_record(line: &str) -> Result<Record, String> {
@@ -31,7 +41,7 @@ pub(crate) fn parse_record(line: &str) -> Result<Record, String> {
     Ok(Record {
         timestamp,
         signal,
-        value,
+        value: Value::Float(value),
     })
 }
 
@@ -44,7 +54,11 @@ mod tests {
         let record = parse_record("1.0,voltage,5.0").unwrap();
         assert_eq!(record.timestamp, 1.0);
         assert_eq!(record.signal, "voltage");
-        assert_eq!(record.value, 5.0);
+
+        match &record.value {
+            Value::Float(value) => assert_eq!(*value, 5.0),
+            _ => panic!("expected float value"),
+        }
     }
 
     #[test]

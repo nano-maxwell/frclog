@@ -1,4 +1,4 @@
-use crate::record::Record;
+use crate::record::{Record, Value};
 
 pub(crate) struct SignalStats {
     pub(crate) count: usize,
@@ -16,10 +16,15 @@ pub(crate) fn calculate_signal_stats(records: &[&Record]) -> SignalStats {
     let mut max = f64::MIN;
 
     for record in records {
-        sum += record.value;
+        let value = match &record.value {
+            Value::Float(value) => *value,
+            _ => todo!(),
+        };
+
+        sum += value;
         count += 1;
-        min = f64::min(min, record.value);
-        max = f64::max(max, record.value);
+        min = f64::min(min, value);
+        max = f64::max(max, value);
     }
 
     let mean = sum / count as f64;
@@ -27,7 +32,12 @@ pub(crate) fn calculate_signal_stats(records: &[&Record]) -> SignalStats {
     let mut squared_diff_sum = 0.0;
 
     for record in records {
-        squared_diff_sum += (record.value - mean).powi(2);
+        let value = match &record.value {
+            Value::Float(value) => *value,
+            _ => todo!(),
+        };
+
+        squared_diff_sum += (value - mean).powi(2);
     }
 
     let std_dev = (squared_diff_sum / count as f64).sqrt();
@@ -49,14 +59,14 @@ mod tests {
     fn calculates_stats_for_multiple_records() {
         let records = [
             Record {
-                value: 1.0,
-                signal: "elevator_current".to_string(),
                 timestamp: 2.0,
+                signal: "elevator_current".to_string(),
+                value: Value::Float(1.0),
             },
             Record {
                 timestamp: 2.0,
                 signal: "elevator_current".to_string(),
-                value: 10.0,
+                value: Value::Float(10.0),
             },
         ];
 
@@ -76,7 +86,7 @@ mod tests {
         let record = Record {
             timestamp: 1.0,
             signal: "voltage".to_string(),
-            value: 4.5,
+            value: Value::Float(4.5),
         };
 
         let stats = calculate_signal_stats(&[&record]);
@@ -94,12 +104,12 @@ mod tests {
             Record {
                 timestamp: 1.0,
                 signal: "temperature".to_string(),
-                value: -10.0,
+                value: Value::Float(-10.0),
             },
             Record {
                 timestamp: 2.0,
                 signal: "temperature".to_string(),
-                value: -2.0,
+                value: Value::Float(-2.0),
             },
         ];
 
@@ -119,17 +129,17 @@ mod tests {
             Record {
                 timestamp: 1.0,
                 signal: "current".to_string(),
-                value: 3.0,
+                value: Value::Float(3.0),
             },
             Record {
                 timestamp: 2.0,
                 signal: "current".to_string(),
-                value: 3.0,
+                value: Value::Float(3.0),
             },
             Record {
                 timestamp: 3.0,
                 signal: "current".to_string(),
-                value: 3.0,
+                value: Value::Float(3.0),
             },
         ];
 
@@ -149,12 +159,12 @@ mod tests {
             Record {
                 timestamp: 1.0,
                 signal: "voltage".to_string(),
-                value: 0.1,
+                value: Value::Float(0.1),
             },
             Record {
                 timestamp: 2.0,
                 signal: "voltage".to_string(),
-                value: 0.2,
+                value: Value::Float(0.2),
             },
         ];
 
@@ -171,17 +181,17 @@ mod tests {
             Record {
                 timestamp: 1.0,
                 signal: "test".to_string(),
-                value: 1.0,
+                value: Value::Float(1.0),
             },
             Record {
                 timestamp: 2.0,
                 signal: "test".to_string(),
-                value: 2.0,
+                value: Value::Float(2.0),
             },
             Record {
                 timestamp: 3.0,
                 signal: "test".to_string(),
-                value: 3.0,
+                value: Value::Float(3.0),
             },
         ];
 

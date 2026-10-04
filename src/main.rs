@@ -2,7 +2,7 @@ mod reader;
 mod record;
 mod stats;
 
-use crate::record::Record;
+use crate::record::{Record, Value};
 use crate::stats::calculate_signal_stats;
 use std::collections::HashSet;
 use std::env;
@@ -92,7 +92,12 @@ fn main() {
             println!("{:<11} Value", "Timestamp");
 
             for record in filtered {
-                println!("{:<11.3} {:.3}", record.timestamp, record.value);
+                match &record.value {
+                    Value::Float(value) => {
+                        println!("{:<11.3} {:.3}", record.timestamp, value);
+                    }
+                    _ => todo!(),
+                }
             }
         }
         "signals" => {
