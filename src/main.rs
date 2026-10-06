@@ -3,8 +3,8 @@ mod record;
 mod stats;
 
 use crate::record::{Record, Value};
-use crate::stats::calculate_numeric_stats;
-use std::collections::HashSet;
+use crate::stats::{calculate_boolean_stats, calculate_numeric_stats};
+use std::collections::{HashMap, HashSet};
 use std::env;
 
 fn main() {
@@ -86,11 +86,7 @@ fn main() {
                 return;
             }
 
-            let signal_type = match &filtered[0].value {
-                Value::Float(_) | Value::Integer(_) => "Numeric",
-                Value::Boolean(_) => "Boolean",
-                Value::Text(_) => "Text",
-            };
+            let signal_type = filtered[0].value.type_name();
 
             println!("Signal: {signal}");
             println!("Type: {signal_type}");
@@ -131,9 +127,29 @@ fn main() {
             let mut signals = signals.into_iter().collect::<Vec<&str>>();
             signals.sort();
 
-            println!("Unique signals:");
+            let signal_width = signals
+                .iter()
+                .map(|signal| signal.len())
+                .max()
+                .unwrap_or(0)
+                .max("Signal".len());
+
+            let frequencies = signal_frequencies(&records);
+
+            println!();
+            println!("{:<width$}   Samples", "Signal", width = signal_width);
+
             for signal in signals {
-                println!("{signal}")
+                match frequencies.get(&signal) {
+                    Some(value) => {
+                        println!("{:<width$}   {}", signal, value, width = signal_width)
+                    }
+                    None => {
+                        eprintln!(
+                            "error: signal '{signal}' found in records but not in frequency hashmap"
+                        )
+                    }
+                }
             }
         }
         "stats" => {
@@ -153,31 +169,46 @@ fn main() {
                 }
             };
 
-            let signals = unique_signals(&records);
+            let filtered = filter_records(&records, signal);
 
-            if !signals.contains(signal.as_str()) {
+            if filtered.is_empty() {
                 eprintln!("error: signal '{signal}' not found in {file}");
                 return;
             }
 
             println!("Calculating stats for '{signal}' in {file}...");
 
-            let filtered = filter_records(&records, signal);
-
-            let stats = match calculate_numeric_stats(&filtered) {
-                Ok(stats) => stats,
-                Err(err) => {
-                    eprintln!("{err}");
-                    return;
+            match &filtered.first().unwrap().value {
+                Value::Float(_) | Value::Integer(_) => match calculate_numeric_stats(&filtered) {
+                    Ok(stats) => {
+                        println!("Stats for '{signal}':");
+                        println!("Samples: {}", stats.count);
+                        println!("Minimum: {:.3}", stats.min);
+                        println!("Maximum: {:.3}", stats.max);
+                        println!("Mean: {:.3}", stats.mean);
+                        println!("Standard Deviation: {:.3}", stats.std_dev);
+                    }
+                    Err(err) => {
+                        eprintln!("{err}");
+                    }
+                },
+                Value::Boolean(_) => {
+                    match calculate_boolean_stats(&filtered) {
+                        Ok(stats) => {
+                            println!("Stats for '{signal}':");
+                            println!("Samples: {}", stats.count);
+                            println!("True Count: {}", stats.true_count);
+                            println!("False Count: {}", stats.false_count);
+                            println!("Percent True: {:.3}%", stats.percent_true);
+                            println!("Transitions: {}", stats.transitions);
+                        }
+                        Err(err) => {
+                            eprintln!("{err}");
+                        }
+                    };
                 }
+                Value::Text(_) => {}
             };
-
-            println!("Stats for '{signal}':");
-            println!("Samples: {}", stats.count);
-            println!("Minimum: {:.3}", stats.min);
-            println!("Maximum: {:.3}", stats.max);
-            println!("Mean: {:.3}", stats.mean);
-            println!("Standard Deviation: {:.3}", stats.std_dev);
         }
         _ => {
             eprintln!("error: command '{command}' not recognized");
@@ -205,4 +236,23 @@ fn filter_records<'a>(records: &'a [Record], signal: &str) -> Vec<&'a Record> {
     }
 
     filtered
+}
+
+fn signal_frequencies(records: &[Record]) -> HashMap<&str, i32> {
+    let mut frequencies: HashMap<&str, i32> = HashMap::new();
+
+    for record in records {
+        let signal = record.signal.as_str();
+
+        match frequencies.get(signal) {
+            Some(value) => {
+                frequencies.insert(signal, value + 1);
+            }
+            None => {
+                frequencies.insert(signal, 1);
+            }
+        }
+    }
+
+    frequencies
 }

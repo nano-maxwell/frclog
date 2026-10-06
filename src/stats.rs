@@ -8,6 +8,14 @@ pub(crate) struct NumericStats {
     pub(crate) std_dev: f64,
 }
 
+pub(crate) struct BooleanStats {
+    pub(crate) count: usize,
+    pub(crate) true_count: usize,
+    pub(crate) false_count: usize,
+    pub(crate) percent_true: f64,
+    pub(crate) transitions: usize,
+}
+
 /// Calculates statistics for a non-empty slice of records with numeric values.
 pub(crate) fn calculate_numeric_stats(records: &[&Record]) -> Result<NumericStats, String> {
     if records.is_empty() {
@@ -54,6 +62,53 @@ pub(crate) fn calculate_numeric_stats(records: &[&Record]) -> Result<NumericStat
         max,
         mean,
         std_dev,
+    })
+}
+
+pub(crate) fn calculate_boolean_stats(records: &[&Record]) -> Result<BooleanStats, String> {
+    if records.is_empty() {
+        return Err("error: cannot calculate boolean stats for empty records".to_string());
+    }
+
+    let mut count = 0;
+    let mut true_count = 0;
+    let mut false_count = 0;
+    let mut transitions = 0;
+    let mut previous: Option<bool> = None;
+
+    for record in records {
+        let value = match &record.value {
+            Value::Boolean(value) => *value,
+            _ => {
+                return Err(
+                    "error: cannot calculate boolean stats for non-boolean values".to_string(),
+                );
+            }
+        };
+
+        count += 1;
+
+        if value {
+            true_count += 1;
+        } else {
+            false_count += 1;
+        }
+
+        if let Some(previous_value) = previous
+            && previous_value != value
+        {
+            transitions += 1;
+        }
+
+        previous = Some(value);
+    }
+
+    Ok(BooleanStats {
+        count,
+        true_count,
+        false_count,
+        percent_true: (true_count as f64 / count as f64) * 100.0,
+        transitions,
     })
 }
 
@@ -281,11 +336,136 @@ mod tests {
     }
 
     #[test]
-    fn rejects_empty_records() {
+    fn rejects_empty_records_in_numeric_calculation() {
         let records: [Record; 0] = [];
 
         let record_refs: Vec<&Record> = records.iter().collect();
         let result = calculate_numeric_stats(&record_refs);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn calculates_boolean_stats_for_all_true_values() {
+        let records = [
+            Record {
+                timestamp: 1.0,
+                signal: "enabled".to_string(),
+                value: Value::Boolean(true),
+            },
+            Record {
+                timestamp: 2.0,
+                signal: "enabled".to_string(),
+                value: Value::Boolean(true),
+            },
+        ];
+
+        let record_refs: Vec<&Record> = records.iter().collect();
+        let stats = calculate_boolean_stats(&record_refs).unwrap();
+
+        assert_eq!(stats.count, 2);
+        assert_eq!(stats.true_count, 2);
+        assert_eq!(stats.false_count, 0);
+        assert_eq!(stats.percent_true, 100.0);
+        assert_eq!(stats.transitions, 0);
+    }
+
+    #[test]
+    fn calculates_boolean_stats_for_all_false_values() {
+        let records = [
+            Record {
+                timestamp: 1.0,
+                signal: "enabled".to_string(),
+                value: Value::Boolean(false),
+            },
+            Record {
+                timestamp: 2.0,
+                signal: "enabled".to_string(),
+                value: Value::Boolean(false),
+            },
+        ];
+
+        let record_refs: Vec<&Record> = records.iter().collect();
+        let stats = calculate_boolean_stats(&record_refs).unwrap();
+
+        assert_eq!(stats.count, 2);
+        assert_eq!(stats.true_count, 0);
+        assert_eq!(stats.false_count, 2);
+        assert_eq!(stats.percent_true, 0.0);
+        assert_eq!(stats.transitions, 0);
+    }
+
+    #[test]
+    fn calculates_boolean_stats_for_mixed_true_and_false_values() {
+        let records = [
+            Record {
+                timestamp: 1.0,
+                signal: "enabled".to_string(),
+                value: Value::Boolean(true),
+            },
+            Record {
+                timestamp: 2.0,
+                signal: "enabled".to_string(),
+                value: Value::Boolean(false),
+            },
+            Record {
+                timestamp: 3.0,
+                signal: "enabled".to_string(),
+                value: Value::Boolean(false),
+            },
+            Record {
+                timestamp: 4.0,
+                signal: "enabled".to_string(),
+                value: Value::Boolean(true),
+            },
+        ];
+
+        let record_refs: Vec<&Record> = records.iter().collect();
+        let stats = calculate_boolean_stats(&record_refs).unwrap();
+
+        assert_eq!(stats.count, 4);
+        assert_eq!(stats.true_count, 2);
+        assert_eq!(stats.false_count, 2);
+        assert_eq!(stats.percent_true, 50.0);
+        assert_eq!(stats.transitions, 2);
+    }
+
+    #[test]
+    fn calculates_boolean_stats_for_single_record() {
+        let record = Record {
+            timestamp: 1.0,
+            signal: "enabled".to_string(),
+            value: Value::Boolean(true),
+        };
+
+        let stats = calculate_boolean_stats(&[&record]).unwrap();
+
+        assert_eq!(stats.count, 1);
+        assert_eq!(stats.true_count, 1);
+        assert_eq!(stats.false_count, 0);
+        assert_eq!(stats.percent_true, 100.0);
+        assert_eq!(stats.transitions, 0);
+    }
+
+    #[test]
+    fn rejects_non_boolean_values_in_boolean_calculation() {
+        let record = Record {
+            timestamp: 1.0,
+            signal: "elevator_current".to_string(),
+            value: Value::Float(2.5),
+        };
+
+        let result = calculate_boolean_stats(&[&record]);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn rejects_empty_records_in_boolean_calculation() {
+        let records: [Record; 0] = [];
+
+        let record_refs: Vec<&Record> = records.iter().collect();
+        let result = calculate_boolean_stats(&record_refs);
 
         assert!(result.is_err());
     }

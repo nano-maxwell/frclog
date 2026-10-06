@@ -11,6 +11,16 @@ pub(crate) enum Value {
     Text(String),
 }
 
+impl Value {
+    pub(crate) fn type_name(&self) -> &str {
+        match self {
+            Value::Float(_) | Value::Integer(_) => "Numeric",
+            Value::Boolean(_) => "Boolean",
+            Value::Text(_) => "Text",
+        }
+    }
+}
+
 pub(crate) fn parse_record(line: &str) -> Result<Record, String> {
     let mut fields = line.split(',');
 
