@@ -1,4 +1,5 @@
 use crate::record::{Record, Value};
+use std::collections::HashMap;
 
 pub(crate) struct NumericStats {
     pub(crate) count: usize,
@@ -13,6 +14,12 @@ pub(crate) struct BooleanStats {
     pub(crate) true_count: usize,
     pub(crate) false_count: usize,
     pub(crate) percent_true: f64,
+    pub(crate) transitions: usize,
+}
+
+pub(crate) struct TextStats {
+    pub(crate) count: usize,
+    pub(crate) unique_values: usize,
     pub(crate) transitions: usize,
 }
 
@@ -108,6 +115,51 @@ pub(crate) fn calculate_boolean_stats(records: &[&Record]) -> Result<BooleanStat
         true_count,
         false_count,
         percent_true: (true_count as f64 / count as f64) * 100.0,
+        transitions,
+    })
+}
+
+pub(crate) fn calculate_text_stats(records: &[&Record]) -> Result<TextStats, String> {
+    if records.is_empty() {
+        return Err("error: cannot calculate text stats for empty records".to_string());
+    }
+
+    let mut count = 0;
+    let mut frequencies: HashMap<&str, usize> = HashMap::new();
+    let mut previous: Option<&str> = Option::None;
+    let mut transitions = 0;
+
+    for record in records {
+        let value = match &record.value {
+            Value::Text(value) => value.as_str(),
+            _ => {
+                return Err("error: cannot calculate text stats for non-text values".to_string());
+            }
+        };
+
+        count += 1;
+
+        match frequencies.get(&value) {
+            Some(count) => {
+                frequencies.insert(value, count + 1);
+            }
+            None => {
+                frequencies.insert(value, 1);
+            }
+        }
+
+        if let Some(previous_value) = previous
+            && previous_value != value
+        {
+            transitions += 1;
+        }
+
+        previous = Some(value);
+    }
+
+    Ok(TextStats {
+        count,
+        unique_values: frequencies.len(),
         transitions,
     })
 }
@@ -468,5 +520,76 @@ mod tests {
         let result = calculate_boolean_stats(&record_refs);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn calculates_text_stats_for_single_record() {
+        let record = Record {
+            timestamp: 1.0,
+            signal: "mode".to_string(),
+            value: Value::Text("teleop".to_string()),
+        };
+
+        let stats = calculate_text_stats(&[&record]).unwrap();
+
+        assert_eq!(stats.count, 1);
+        assert_eq!(stats.unique_values, 1);
+        assert_eq!(stats.transitions, 0);
+    }
+
+    #[test]
+    fn calculates_text_stats_for_multiple_records() {
+        let records = [
+            Record {
+                timestamp: 1.0,
+                signal: "mode".to_string(),
+                value: Value::Text("disabled".to_string()),
+            },
+            Record {
+                timestamp: 2.0,
+                signal: "mode".to_string(),
+                value: Value::Text("autonomous".to_string()),
+            },
+            Record {
+                timestamp: 3.0,
+                signal: "mode".to_string(),
+                value: Value::Text("teleop".to_string()),
+            },
+            Record {
+                timestamp: 4.0,
+                signal: "mode".to_string(),
+                value: Value::Text("teleop".to_string()),
+            },
+        ];
+
+        let record_refs: Vec<&Record> = records.iter().collect();
+        let stats = calculate_text_stats(&record_refs).unwrap();
+
+        assert_eq!(stats.count, 4);
+        assert_eq!(stats.unique_values, 3);
+        assert_eq!(stats.transitions, 2);
+    }
+
+    #[test]
+    fn rejects_non_text_values_in_text_calculation() {
+        let record = Record {
+            timestamp: 1.0,
+            signal: "mode".to_string(),
+            value: Value::Float(3.0),
+        };
+
+        let result = calculate_text_stats(&[&record]);
+
+        assert!(result.is_err())
+    }
+
+    #[test]
+    fn rejects_empty_records_in_text_calculation() {
+        let records: [Record; 0] = [];
+
+        let record_refs: Vec<&Record> = records.iter().collect();
+        let result = calculate_text_stats(&record_refs);
+
+        assert!(result.is_err())
     }
 }

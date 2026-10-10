@@ -3,7 +3,7 @@ mod record;
 mod stats;
 
 use crate::record::{Record, Value};
-use crate::stats::{calculate_boolean_stats, calculate_numeric_stats};
+use crate::stats::{calculate_boolean_stats, calculate_numeric_stats, calculate_text_stats};
 use std::collections::{HashMap, HashSet};
 use std::env;
 
@@ -177,6 +177,7 @@ fn main() {
             }
 
             println!("Calculating stats for '{signal}' in {file}...");
+            println!();
 
             match &filtered.first().unwrap().value {
                 Value::Float(_) | Value::Integer(_) => match calculate_numeric_stats(&filtered) {
@@ -207,7 +208,17 @@ fn main() {
                         }
                     };
                 }
-                Value::Text(_) => {}
+                Value::Text(_) => match calculate_text_stats(&filtered) {
+                    Ok(stats) => {
+                        println!("Stats for '{signal}':");
+                        println!("Samples: {}", stats.count);
+                        println!("Unique Values: {}", stats.unique_values);
+                        println!("Transitions: {}", stats.transitions);
+                    }
+                    Err(err) => {
+                        eprintln!("{err}");
+                    }
+                },
             };
         }
         _ => {
