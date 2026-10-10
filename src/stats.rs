@@ -1,6 +1,12 @@
 use crate::record::{Record, Value};
 use std::collections::HashMap;
 
+pub(crate) enum SignalStats {
+    Numeric(NumericStats),
+    Boolean(BooleanStats),
+    Text(TextStats),
+}
+
 pub(crate) struct NumericStats {
     pub(crate) count: usize,
     pub(crate) min: f64,
@@ -21,6 +27,27 @@ pub(crate) struct TextStats {
     pub(crate) count: usize,
     pub(crate) unique_values: usize,
     pub(crate) transitions: usize,
+}
+
+pub(crate) fn calculate_signal_stats(records: &[&Record]) -> Result<SignalStats, String> {
+    if records.is_empty() {
+        return Err("error: cannot calculate signal stats for empty records".to_string());
+    }
+
+    match &records[0].value {
+        Value::Float(_) | Value::Integer(_) => {
+            let stats = calculate_numeric_stats(records)?;
+            Ok(SignalStats::Numeric(stats))
+        }
+        Value::Boolean(_) => {
+            let stats = calculate_boolean_stats(records)?;
+            Ok(SignalStats::Boolean(stats))
+        }
+        Value::Text(_) => {
+            let stats = calculate_text_stats(records)?;
+            Ok(SignalStats::Text(stats))
+        }
+    }
 }
 
 /// Calculates statistics for a non-empty slice of records with numeric values.

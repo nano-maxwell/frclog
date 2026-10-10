@@ -3,7 +3,7 @@ mod record;
 mod stats;
 
 use crate::record::{Record, Value};
-use crate::stats::{calculate_boolean_stats, calculate_numeric_stats, calculate_text_stats};
+use crate::stats::{SignalStats, calculate_signal_stats};
 use std::collections::{HashMap, HashSet};
 use std::env;
 
@@ -179,48 +179,39 @@ fn main() {
             println!("Calculating stats for '{signal}' in {file}...");
             println!();
 
-            match &filtered.first().unwrap().value {
-                Value::Float(_) | Value::Integer(_) => match calculate_numeric_stats(&filtered) {
-                    Ok(stats) => {
-                        println!("Stats for '{signal}':");
-                        println!("Samples: {}", stats.count);
-                        println!("Minimum: {:.3}", stats.min);
-                        println!("Maximum: {:.3}", stats.max);
-                        println!("Mean: {:.3}", stats.mean);
-                        println!("Standard Deviation: {:.3}", stats.std_dev);
-                    }
-                    Err(err) => {
-                        eprintln!("{err}");
-                    }
-                },
-                Value::Boolean(_) => {
-                    match calculate_boolean_stats(&filtered) {
-                        Ok(stats) => {
-                            println!("Stats for '{signal}':");
-                            println!("Samples: {}", stats.count);
-                            println!("True Count: {}", stats.true_count);
-                            println!("False Count: {}", stats.false_count);
-                            println!("Percent True: {:.3}%", stats.percent_true);
-                            println!("Transitions: {}", stats.transitions);
-                        }
-                        Err(err) => {
-                            eprintln!("{err}");
-                        }
-                    };
+            let stats = match calculate_signal_stats(&filtered) {
+                Ok(stats) => stats,
+                Err(err) => {
+                    eprintln!("{err}");
+                    return;
                 }
-                Value::Text(_) => match calculate_text_stats(&filtered) {
-                    Ok(stats) => {
-                        println!("Stats for '{signal}':");
-                        println!("Samples: {}", stats.count);
-                        println!("Unique Values: {}", stats.unique_values);
-                        println!("Transitions: {}", stats.transitions);
-                    }
-                    Err(err) => {
-                        eprintln!("{err}");
-                    }
-                },
             };
+
+            println!("Stats for '{signal}':");
+
+            match stats {
+                SignalStats::Numeric(stats) => {
+                    println!("Samples: {}", stats.count);
+                    println!("Minimum: {:.3}", stats.min);
+                    println!("Maximum: {:.3}", stats.max);
+                    println!("Mean: {:.3}", stats.mean);
+                    println!("Standard Deviation: {:.3}", stats.std_dev);
+                }
+                SignalStats::Boolean(stats) => {
+                    println!("Samples: {}", stats.count);
+                    println!("True Count: {}", stats.true_count);
+                    println!("False Count: {}", stats.false_count);
+                    println!("Percent True: {:.3}%", stats.percent_true);
+                    println!("Transitions: {}", stats.transitions);
+                }
+                SignalStats::Text(stats) => {
+                    println!("Samples: {}", stats.count);
+                    println!("Unique Values: {}", stats.unique_values);
+                    println!("Transitions: {}", stats.transitions);
+                }
+            }
         }
+
         _ => {
             eprintln!("error: command '{command}' not recognized");
         }
