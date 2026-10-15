@@ -1,15 +1,16 @@
 mod reader;
 mod record;
 mod stats;
+mod wpilog;
 
 use crate::record::{Record, Value};
 use crate::stats::{SignalStats, calculate_signal_stats};
 use std::collections::{HashMap, HashSet};
-use std::env;
+use std::{env, fs};
 
 fn main() {
     let program_name = "frclog";
-    let version = 2;
+    let version = env!("CARGO_PKG_VERSION");
     // let supported_format = "CSV";
 
     let args = env::args().collect::<Vec<String>>();
@@ -211,7 +212,20 @@ fn main() {
                 }
             }
         }
+        "wpilog" => {
+            let bytes = fs::read(file).map_err(|err| err.to_string());
 
+            match bytes {
+                Ok(value) => {
+                    if let Err(err) = wpilog::parse_header(file, &value) {
+                        eprintln!("{err}");
+                    }
+                }
+                Err(err) => {
+                    eprintln!("{err}");
+                }
+            }
+        }
         _ => {
             eprintln!("error: command '{command}' not recognized");
         }
