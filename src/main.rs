@@ -213,12 +213,34 @@ fn main() {
             }
         }
         "wpilog" => {
-            let bytes = fs::read(file).map_err(|err| err.to_string());
+            let bytes = match fs::read(file) {
+                Ok(value) => value,
+                Err(err) => {
+                    eprintln!("{err}");
+                    return;
+                }
+            };
 
-            match bytes {
-                Ok(value) => {
-                    if let Err(err) = wpilog::parse_header(file, &value) {
-                        eprintln!("{err}");
+            let header = match wpilog::parse_file_header(file, &bytes) {
+                Ok(value) => value,
+                Err(err) => {
+                    eprintln!("{err}");
+                    return;
+                }
+            };
+
+            let first_record_start = 12 + header.extra_header.len();
+
+            match wpilog::parse_record(file, &bytes, first_record_start) {
+                Ok(second_record_start) => {
+                    if second_record_start < bytes.len() {
+                        println!("\n--- SECOND RECORD ---");
+
+                        if let Err(err) = wpilog::parse_record(file, &bytes, second_record_start) {
+                            eprintln!("{err}");
+                        }
+                    } else {
+                        println!("No second record.");
                     }
                 }
                 Err(err) => {
