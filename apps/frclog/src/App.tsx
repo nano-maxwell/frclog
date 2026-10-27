@@ -1,5 +1,5 @@
 import "./App.css";
-import {useState} from "react";
+import {useState, useEffect, useRef} from "react";
 import SignalGroup from "./components/SignalGroup.tsx";
 
 const signalGroups = [
@@ -26,6 +26,8 @@ function App() {
         useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
     const query = searchQuery.trim().toLowerCase();
 
     const filteredGroups =
@@ -41,6 +43,26 @@ function App() {
                         : group.signals.filter(signal => signal.toLowerCase().includes(query))
                 }));
 
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.metaKey && event.key.toLowerCase() === "k") {
+                event.preventDefault();
+                searchInputRef.current?.focus();
+            }
+
+            if (event.key === "Escape" &&
+                document.activeElement === searchInputRef.current) {
+                searchInputRef.current?.blur();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        }
+    }, []);
+
     return (
         <main className="container">
             <header className="titlebar" data-tauri-drag-region>
@@ -51,6 +73,7 @@ function App() {
                         aria-label="Search signals"
                         onChange={e => setSearchQuery(e.target.value)}
                         value={searchQuery}
+                        ref={searchInputRef}
                     />
                 </div>
             </header>
@@ -68,6 +91,7 @@ function App() {
                                 onSelect={setSelectedSignal}
                                 isSearching={query.length > 0}
                             />))}
+                        {filteredGroups.length === 0 && <p className="no-results">No matching signals</p>}
                     </div>
                 </div>
                 <div className="workspace">
