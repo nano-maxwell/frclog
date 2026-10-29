@@ -1,0 +1,66 @@
+name: Bug Report
+description: Report a problem with frclog.
+title: "[Bug]: "
+labels: ["type: bug", "needs triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks so much for reporting a bug in frclog!
+        Please provide as much information as you can to help us investigate the issue.
+        Note: Only the bug description is required.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected to happen.
+      placeholder: Tell us about the issue...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: If possible, explain how to reproduce the issue.
+      placeholder: |
+        1. Open frclog...
+        2. Run...
+        3. Observe...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: operating-system
+    attributes:
+      label: Operating System
+      description: Which operating system are you using?
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Which frclog component and version/commit are you using?
+      placeholder: |
+        Component: CLI
+        Version/Commit: v0.1.0/1d4813d
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any relevant screenshots, logs, or error messages. Remove sensitive information before sharing.
+      placeholder: Any other details that might help...
+    validations:
+      required: false
