@@ -1,0 +1,39 @@
+name: Feature Request
+description: Suggest a new feature or improvement for frclog.
+title: "feat: "
+labels: ["type: feature", "needs triage"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks so much for helping improve frclog!
+        If you have an idea for a new feature or improvement, we'd love to hear it.
+        Only the idea description is required.
+        
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe your idea
+      description: What feature or improvement would you like to see in frclog?
+      placeholder: Tell us about your idea...
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Why would this be useful?
+      description: Explain how this feature could benefit users or address an existing limitation.
+      placeholder: What would this feature help you or other teams accomplish?
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Share any relevant examples, screenshots, mockups, or alternative approaches.
+      placeholder: Anything else you'd like to share?
+    validations:
+      required: false
